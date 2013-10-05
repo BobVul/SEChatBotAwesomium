@@ -18,7 +18,7 @@ namespace SEChatBotAwesomium
             try
             {
                 WebPreferences prefs = new WebPreferences();
-                prefs.LoadImagesAutomatically = false;
+                prefs.LoadImagesAutomatically = true;
                 prefs.RemoteFonts = false;
                 prefs.WebAudio = false;
                 prefs.Dart = false;
@@ -31,7 +31,7 @@ namespace SEChatBotAwesomium
 
                 aweSession = WebCore.CreateWebSession("session.dat", prefs);
                 aweSession.ClearCookies();
-                aweView = WebCore.CreateWebView(1, 1, aweSession);
+                aweView = WebCore.CreateWebView(1024, 768, aweSession);
                 aweView.ResponsiveChanged += aweView_ResponsiveChanged;
                 aweView.Crashed += aweView_Crashed;
                 aweView.ConsoleMessage += aweView_ConsoleMessage;
@@ -79,21 +79,24 @@ namespace SEChatBotAwesomium
             Console.WriteLine(aweView.Source + ": In the chatroom! Determining if we need to login...");
             // ImagePanel.displayImage(dri.getScreenshotAs(OutputType.BASE64));
 
-            JSObject loginLink = null;
+            dynamic document = (JSObject)aweView.ExecuteJavascriptWithResult("document");
+
             // Awesomium doesn't seem to have any method to traverse/search the DOM, so let's do it in JS! (urgh)
-            loginLink = aweView.ExecuteJavascriptWithResult("document.evaluate(\"//a[starts-with(@href, '/login/global') and text() = 'logged in' and not(ancestor::div[contains(@style,'display:none')]) and not(ancestor::div[contains(@style,'display: none')])]\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;");
+            dynamic loginLink = document.evaluate("//a[starts-with(@href, '/login/global') and text() = 'logged in' and not(ancestor::div[contains(@style,'display:none')]) and not(ancestor::div[contains(@style,'display: none')])]", document, null, 9 /*XPathResult.FIRST_ORDERED_NODE_TYPE*/, null).singleNodeValue;
             //loginLink = dri.findElement(By.xpath("//a[starts-with(@href, '/login/global') and text() = 'logged in' and not(ancestor::div[contains(@style,'display:none')]) and not(ancestor::div[contains(@style,'display: none')])]"));
+
             if (loginLink != null)
             {
                 Console.WriteLine("Crap. We need to login.");
-                loginLink.Invoke("click");
+                string link = loginLink.ToString();
+                aweView.Source = link.ToUri();
             }
             else
             {
                 Console.WriteLine("We don't need to login!");
             }
 
-            if(loginLink != null)
+            if (loginLink != null)
             {
                 //Need to login
                 while (aweView.IsLoading)
@@ -102,13 +105,14 @@ namespace SEChatBotAwesomium
                 }
                 Console.WriteLine(aweView.Source + ": Performing stage 1 chat-login auth link");
                 // ImagePanel.displayImage(dri.getScreenshotAs(OutputType.BASE64));
-                JSObject midpointLink = null;
-                midpointLink = aweView.ExecuteJavascriptWithResult("document.evaluate(\"//a[contains(@href, '/users/chat-login')]\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;");
+                document = (JSObject)aweView.ExecuteJavascriptWithResult("document");
+                dynamic midpointLink = document.evaluate("//a[contains(@href, '/users/chat-login')]", document, null, 9 /*XPathResult.FIRST_ORDERED_NODE_TYPE*/, null).singleNodeValue;
                 //midpointLink = dri.findElement(By.xpath("//a[contains(@href, '/users/chat-login')]"));
                 if (midpointLink != null)
                 {
                     Console.WriteLine("We don't have a network cookie at all.");
-                    midpointLink.Invoke("click");
+                    string link = midpointLink.ToString();
+                    aweView.Source = link.ToUri(); ;
                 }
                 else
                 {
@@ -122,24 +126,31 @@ namespace SEChatBotAwesomium
                     }
                     Console.WriteLine(aweView.Source + ": We should be at the page that asks you to pick a sign-in method now...");
                     // ImagePanel.displayImage(dri.getScreenshotAs(OutputType.BASE64));
-    
+                    
+                    // TODO: only works up to around here
+
+
                     aweView.ExecuteJavascriptWithResult("openid.signin('stack_exchange');");
                     // Perhaps use the .LoadingFrameComplete event instead?
                     while (aweView.IsLoading)
                     {
                         WebCore.Update();
                     }
-                    Thread.Sleep(2000);
+                    Thread.Sleep(5000);
                     // ImagePanel.displayImage(dri.getScreenshotAs(OutputType.BASE64));
                     Console.WriteLine(aweView.Source + ": We should be at the sign-in page now...");
-    
-                    aweView.ExecuteJavascriptWithResult("document.getElementById(\"email\").value = " + s_username, "//frame[name='affiliate-signin-iframe']");
-                    aweView.ExecuteJavascriptWithResult("document.getElementById(\"password\").value = " + s_password, "//frame[name='affiliate-signin-iframe']");
+
+                    BitmapSurface surface = (BitmapSurface)aweView.Surface;
+                    surface.SaveToPNG("screenshot.png");
+
+                    document = (JSObject)aweView.ExecuteJavascriptWithResult("document", "//iframe[@id='affiliate-signin-iframe']");
+                    document.getElementById("email").value = s_username;
+                    document.getElementById("password").value = s_password;
                     // ImagePanel.displayImage(dri.getScreenshotAs(OutputType.BASE64));
-                    JSObject submitButton = aweView.ExecuteJavascriptWithResult("document.getElementsByClassName(\"affiliate-button\")", "//frame[name='affiliate-signin-iframe']");
+                    dynamic submitButton = document.getElementsByClassName("affiliate-button");
                     if(submitButton == null)
                         throw new Exception("Couldn't find the affiliate-button classed submit button!");
-                    submitButton.Invoke("click");
+                    submitButton.click();
                     while (aweView.IsLoading)
                     {
                         WebCore.Update();
