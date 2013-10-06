@@ -9,7 +9,15 @@ namespace SEChatBotAwesomium
 {
     public class ExtendedWebView
     {
+        /// <summary>
+        /// NOTE: Only automatically set when nagivated via .Source
+        /// </summary>
+        // TODO: Auto set to false when any navigation happens
         public bool PageLoaded { get; set; }
+        /// <summary>
+        /// NOTE: Only automatically set when nagivated via .Source
+        /// </summary>
+        // TODO: Auto set to false when any navigation happens
         public bool FrameLoaded { get; set; }
         public Uri Source
         {
@@ -56,6 +64,8 @@ namespace SEChatBotAwesomium
 
         public void SaveScreenshot(string path)
         {
+            if (!ScreenshotsEnabled)
+                return;
             ((BitmapSurface)WebView.Surface).SaveToPNG(path);
         }
 

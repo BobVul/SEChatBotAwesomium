@@ -39,11 +39,20 @@ namespace SEChatBotAwesomium
             chatUrl = "http://chat.stackexchange.com/rooms/118/root-access";
             scriptUrl = "https://raw.github.com/allquixotic/SO-ChatBot/master/master.js";
             screens = true;
-#endif
+            sessionPath = "session";
+#else
+            try
+            {
+                options.Parse(args);
+            }
+            catch (OptionException)
+            {
+                ShowHelp(options, "Error - usage is:");
+            }
 
             if (help)
             {
-                ShowHelp(options, "Error - usage is:");
+                ShowHelp(options, "Usage:");
             }
 
             if (user == null)
@@ -70,6 +79,7 @@ namespace SEChatBotAwesomium
             {
                 sessionPath = "session";
             }
+#endif
 
             try
             {
@@ -240,6 +250,7 @@ namespace SEChatBotAwesomium
                         {
                             if (element == null)
                                 throw new Exception("Couldn't find the affiliate-button classed submit button!");
+                            eView.PageLoaded = false;
                             element.click();
                         }
                     }
@@ -275,11 +286,19 @@ namespace SEChatBotAwesomium
                                 {
                                     WebCore.Update();
                                 }
-                                // redirect
-                                eView.PageLoaded = false;
-                                while (!eView.PageLoaded)
+
+                                Console.WriteLine(eView.Source + ": Returning to the chatroom...");
+
+                                // We **really** want to be sure we're back in the chatroom after that redirect.
+                                while (eView.Source.ToString() != chatUrl.ToString())
                                 {
-                                    WebCore.Update();
+                                    while (!eView.PageLoaded)
+                                    {
+                                        //eView.SaveScreenshot("screenshot" + eView.RunningTime.ElapsedMilliseconds + ".png");
+
+                                        WebCore.Update();
+                                    }
+                                    eView.PageLoaded = false;
                                 }
                             }
                         }
@@ -297,6 +316,8 @@ namespace SEChatBotAwesomium
 #if DEBUG
             File.WriteAllText("dump.html", aweView.ExecuteJavascriptWithResult("document.getElementsByTagName('html')[0].innerHTML"));
 #endif
+
+            eView.SaveScreenshot("screenshot" + eView.RunningTime.ElapsedMilliseconds + ".png");
             
             string line;
             while (true)
