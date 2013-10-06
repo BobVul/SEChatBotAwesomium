@@ -21,12 +21,13 @@ namespace SEChatBotAwesomium
             try
             {
                 WebConfig config = new WebConfig();
-                config.UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2";
+                config.LogLevel = LogLevel.Verbose;
+                //config.UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2";
                 WebCore.Initialize(config);
 
                 WebPreferences prefs = new WebPreferences();
                 prefs.LoadImagesAutomatically = true;
-                prefs.RemoteFonts = false;
+                prefs.RemoteFonts = true;
                 prefs.WebAudio = false;
                 prefs.Dart = false;
                 prefs.CanScriptsCloseWindows = false;
@@ -34,7 +35,7 @@ namespace SEChatBotAwesomium
                 prefs.WebSecurity = false;
                 prefs.Javascript = true;
                 prefs.LocalStorage = true;
-                prefs.Databases = false;            // ?
+                prefs.Databases = true;            // ?
 
                 aweSession = WebCore.CreateWebSession("session", prefs);
                 aweSession.ClearCookies();
@@ -204,8 +205,6 @@ namespace SEChatBotAwesomium
                     Console.WriteLine(aweView.Source + ": In the chatroom! Authenticating...");
                     // ImagePanel.displayImage(dri.getScreenshotAs(OutputType.BASE64));
 
-                    Thread.Sleep(3000);
-
 
                     BitmapSurface surface = (BitmapSurface)aweView.Surface;
                     surface.SaveToPNG("screenshot" + sw.ElapsedMilliseconds + ".png");
@@ -225,15 +224,15 @@ namespace SEChatBotAwesomium
                 }
             }
 
-
-            Thread.Sleep(5000);
             ((BitmapSurface)aweView.Surface).SaveToPNG("screenshot" + sw.ElapsedMilliseconds + ".png");
             
             String content = File.ReadAllText(scriptPath);
             if (content == null || content.Length == 0)
                 throw new IOException("Couldn't load " + scriptPath);
             Console.WriteLine(aweView.Source + ": Executing bot script...");
-            aweView.ExecuteJavascript(content);
+
+            //aweView.Source = "javascript:(function(){var a=document.createElement(\"script\");a.src=\"https://raw.github.com/allquixotic/SO-ChatBot/master/master.js\",document.head.appendChild(a)})()".ToUri();
+            aweView.ExecuteJavascriptWithResult("var a=document.createElement(\"script\");a.src=\"https://raw.github.com/allquixotic/SO-ChatBot/master/master.js\",document.head.appendChild(a)");
 
             Console.WriteLine("Running...");
             // ImagePanel.displayImage(dri.getScreenshotAs(OutputType.BASE64));
@@ -242,7 +241,9 @@ namespace SEChatBotAwesomium
             while (true)
             {
                 line = Console.ReadLine();
-                aweView.ExecuteJavascript(line);
+                aweView.ExecuteJavascriptWithResult(line);
+
+                ((BitmapSurface)aweView.Surface).SaveToPNG("screenshot" + sw.ElapsedMilliseconds + ".png");
             }
 
         }
