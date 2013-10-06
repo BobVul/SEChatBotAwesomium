@@ -21,13 +21,11 @@ namespace SEChatBotAwesomium
             try
             {
                 WebConfig config = new WebConfig();
-                config.LogLevel = LogLevel.Verbose;
-                //config.UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.13+ (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2";
                 WebCore.Initialize(config);
 
                 WebPreferences prefs = new WebPreferences();
                 prefs.LoadImagesAutomatically = true;
-                prefs.RemoteFonts = true;
+                prefs.RemoteFonts = false;
                 prefs.WebAudio = false;
                 prefs.Dart = false;
                 prefs.CanScriptsCloseWindows = false;
@@ -35,7 +33,7 @@ namespace SEChatBotAwesomium
                 prefs.WebSecurity = false;
                 prefs.Javascript = true;
                 prefs.LocalStorage = true;
-                prefs.Databases = true;            // ?
+                prefs.Databases = false;            // ?
 
                 aweSession = WebCore.CreateWebSession("session", prefs);
                 aweSession.ClearCookies();
